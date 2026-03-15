@@ -13,25 +13,47 @@
         .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
         h3 { text-align: center; color: #ffcc00; margin: 15px 0; }
+
+        /* PANNELLO EDIT COMPATTO IN BASSO A DESTRA */
         #add-point-panel {
-            position: absolute; top: 10px; left: 260px;
+            position: absolute; 
+            bottom: 50px; /* Posizionato sopra il pannello coordinate (che è alto circa 40px) */
+            right: 10px;
             background: rgba(26, 26, 26, 0.95); color: white;
-            padding: 15px; border: 1px solid #ffcc00; border-radius: 8px;
-            z-index: 2000; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            padding: 10px; border: 1px solid #ffcc00; border-radius: 8px;
+            z-index: 2000; 
+            width: 180px; /* Ridotto */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        input { width: 92%; margin-bottom: 10px; padding: 6px; background: #333; color: white; border: 1px solid #555; }
-        button { width: 100%; padding: 10px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        
+        h4 { margin: 0 0 8px 0; color: #ffcc00; font-size: 14px; text-align: center; }
+        
+        input { 
+            width: 88%; margin-bottom: 6px; padding: 5px; 
+            background: #333; color: white; border: 1px solid #555; 
+            font-size: 12px; border-radius: 4px;
+        }
+        
+        button { 
+            width: 100%; padding: 6px; margin-top: 3px; 
+            border: none; cursor: pointer; font-weight: bold; 
+            transition: 0.2s; font-size: 11px; border-radius: 4px;
+        }
+        
         .btn-add { background: #ffcc00; color: #000; }
-        .btn-undo { background: #444; color: #eee; font-size: 11px; margin-top: 5px; }
-        /* Stile pulsante Discord */
-        .btn-discord { background: #5865F2; color: white; margin-top: 15px; height: 50px; }
+        .btn-undo { background: #444; color: #eee; font-size: 10px; }
+        .btn-discord { background: #5865F2; color: white; margin-top: 10px; height: 35px; }
         button:hover { opacity: 0.8; transform: scale(1.02); }
+
+        /* PANNELLO COORDINATE LIVE */
         #coords-display {
             position: absolute; bottom: 10px; right: 10px;
             background: rgba(0, 0, 0, 0.7); color: #ffcc00;
-            padding: 5px 10px; border: 1px solid #ffcc00; font-family: monospace; z-index: 2000;
+            padding: 5px 10px; border: 1px solid #ffcc00; 
+            font-family: monospace; z-index: 2000; font-size: 12px;
+            border-radius: 4px; min-width: 180px; text-align: center;
         }
-        .session-info { font-size: 11px; color: #aaa; margin-top: 10px; text-align: center; }
+        .session-info { font-size: 10px; color: #aaa; margin-top: 5px; text-align: center; }
     </style>
 </head>
 <body>
@@ -43,19 +65,19 @@
 
 <div id="map">
     <div id="add-point-panel">
-        <h4 style="margin:0 0 10px 0; color:#ffcc00">Editor Comunità</h4>
+        <h4>Editor</h4>
         <input type="text" id="p-name" placeholder="Nome punto...">
-        <input type="text" id="p-coords" placeholder="Clicca sulla mappa" readonly>
-        <button class="btn-add" onclick="addNewPoint()">Aggiungi alla Sessione</button>
-        <button class="btn-undo" onclick="undoLastPoint()">Annulla Ultimo</button>
+        <input type="text" id="p-coords" placeholder="Clicca mappa" readonly>
+        <button class="btn-add" onclick="addNewPoint()">Aggiungi</button>
+        <button class="btn-undo" onclick="undoLastPoint()">Annulla</button>
         
         <div class="session-info">
-            Punti pronti: <b id="count-val" style="color:#ffcc00">0</b>
+            Punti: <b id="count-val" style="color:#ffcc00">0</b>
         </div>
 
-        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+        <hr style="border: 0; border-top: 1px solid #444; margin: 8px 0;">
         
-        <button class="btn-discord" onclick="sendToDiscord()">INVIA SU DISCORD</button>
+        <button class="btn-discord" onclick="sendToDiscord()">INVIA A DISCORD</button>
     </div>
     <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
 </div>
@@ -66,7 +88,6 @@
     let savedPoints = []; 
     let sessionMarkers = [];
 
-    // Incolla i punti approvati qui dentro tra le parentesi quadre
     const permanentPoints = [];
 
     function initMap() {
@@ -125,10 +146,9 @@
     async function sendToDiscord() {
         if (savedPoints.length === 0) { alert("Nessun punto da inviare!"); return; }
 
-        // --- INSERISCI IL TUO WEBHOOK QUI ---
-        const webhookURL = "https://discord.com/api/webhooks/1482787286180696237/QWpblUkLsglF0zWByCS2PWE4Agnj4ETRcug9fCmUOY8qKw6TpTRr4j3g_P1EnIOlzyut";
+        const webhookURL = "IL_TUO_WEBHOOK_URL_QUI";
 
-        let pointsText = "Per favore aggiungi questi punti al file:\n```javascript\n";
+        let pointsText = "Nuovi punti per il file:\n```javascript\n";
         savedPoints.forEach(p => {
             pointsText += `{ name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
         });
@@ -139,7 +159,7 @@
             embeds: [{
                 title: "📍 Nuovi Punti Ricevuti",
                 description: pointsText,
-                color: 16764160 // Oro
+                color: 16764160
             }]
         };
 
@@ -151,14 +171,13 @@
             });
 
             if (response.ok) {
-                alert("✅ Inviato correttamente a Discord!");
-                // Pulisce la sessione dopo l'invio
+                alert("✅ Inviato a Discord!");
                 savedPoints = [];
                 sessionMarkers.forEach(m => map.removeLayer(m));
                 sessionMarkers = [];
                 document.getElementById('count-val').innerText = "0";
             } else {
-                alert("❌ Errore durante l'invio. Controlla il Webhook.");
+                alert("❌ Errore Webhook.");
             }
         } catch (error) {
             alert("❌ Errore di connessione.");
