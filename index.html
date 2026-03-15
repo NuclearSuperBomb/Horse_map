@@ -1,48 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-    <title>RDR2 Map</title>
+    <meta charset="UTF-8">
+    <title>RDR2 Railroad Map</title>
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
     <style>
-        body { margin: 0; display: flex; background: #111; color: white; font-family: sans-serif; }
-        #sidebar { width: 250px; height: 100vh; background: #222; overflow-y: auto; }
-        #map { flex-grow: 1; height: 100vh; background: #000; }
-        .list-item { padding: 10px; border-bottom: 1px solid #444; cursor: pointer; }
-        .list-item:hover { background: #333; }
+        body { margin: 0; padding: 0; background: #000; color: white; display: flex; height: 100vh; font-family: sans-serif; }
+        #sidebar { width: 250px; background: #1a1a1a; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
+        #map { flex-grow: 1; height: 100vh; background: #0b0b0b; }
+        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; }
+        .list-item:hover { background: #2a2a2a; color: #ffcc00; }
+        /* Box di caricamento visibile */
+        #status { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 10px; z-index: 2000; border: 1px solid #ffcc00; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h3 style="text-align:center">Punti Ferroviari</h3>
+    <h3 style="text-align:center; color:#ffcc00">PUNTI FERROVIARI</h3>
     <div id="point-list"></div>
 </div>
+
+<div id="status">Stato: Inizializzazione...</div>
 <div id="map"></div>
 
 <script>
-    // IL TUO LINK
-    const myImage = 'https://files.catbox.moe/5syah5.jpg';
+    const imgUrl = 'https://files.catbox.moe/5syah5.jpg';
+    const status = document.getElementById('status');
 
-    // Setup mappa semplice (coordinate da 0 a 100)
+    // 1. Inizializzazione Mappa con CRS Simple
     const map = L.map('map', {
         crs: L.CRS.Simple,
-        minZoom: -2
+        minZoom: -3,
+        maxZoom: 2,
+        center: [500, 500],
+        zoom: -1
     });
 
-    const bounds = [[0,0], [100, 100]]; // Mappa trattata come un quadrato 100x100
-    L.imageOverlay(myImage, bounds).addTo(map);
-    map.fitBounds(bounds);
+    // 2. Definizione Confini (0-1000)
+    const bounds = [[0, 0], [1000, 1000]];
+    
+    // 3. Caricamento Immagine
+    const mapImage = L.imageOverlay(imgUrl, bounds, {
+        interactive: true,
+        opacity: 1
+    }).addTo(map);
 
-    // ESEMPIO DI PUNTI (Usa numeri da 0 a 100)
-    // [Y, X] -> 100,0 è in alto a sinistra / 0,100 è in basso a destra
-    const points = [
-        { name: "Punto d'inizio", coords: [80, 20] },
-        { name: "Stazione Centrale", coords: [50, 50] }
+    status.innerHTML = "Stato: Download immagine in corso (25MB)...";
+
+    mapImage.on('load', function() {
+        status.innerHTML = "Stato: Mappa Caricata!";
+        setTimeout(() => status.style.display = 'none', 3000);
+    });
+
+    mapImage.on('error', function() {
+        status.innerHTML = "ERRORE: Impossibile caricare l'immagine. Controlla il link.";
+        status.style.color = "red";
+    });
+
+    // 4. Esempio Punto di Test
+    const poi = [
+        { name: "Esempio Posizione", coords: [500, 500] }
     ];
 
     const listDiv = document.getElementById('point-list');
-    points.forEach(p => {
+    poi.forEach(p => {
         const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
         const item = document.createElement('div');
         item.className = 'list-item';
@@ -51,10 +74,12 @@
         listDiv.appendChild(item);
     });
 
-    // CLICCA SULLA MAPPA PER VEDERE LE COORDINATE IN CONSOLE (F12)
+    // 5. Tool per Coordinate (F12 Console)
     map.on('click', function(e) {
-        console.log("Coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
+        console.log("Coordinate per il codice: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
     });
+
+    map.fitBounds(bounds);
 </script>
 </body>
 </html>
