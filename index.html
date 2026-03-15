@@ -2,52 +2,59 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>RDR2 Map</title>
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <script src="https://unpkg.com"></script>
+    <title>RDR2 Railroad Map</title>
+    <!-- Link ufficiali Leaflet aggiornati -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com" />
+    <script src="https://cdnjs.cloudflare.com"></script>
     <style>
-        /* Forza l'altezza al 100% per evitare che la mappa collassi a 0 pixel */
         html, body { height: 100%; margin: 0; padding: 0; background: #000; overflow: hidden; }
         body { display: flex; font-family: sans-serif; }
         #sidebar { width: 250px; background: #1a1a1a; color: white; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
-        #map { flex: 1; height: 100%; background: #000; }
+        #map { flex: 1; height: 100%; background: #0b0b0b; }
         .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
+        h3 { text-align: center; color: #ffcc00; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h3 style="text-align:center; color:#ffcc00">PUNTI FERROVIARI</h3>
+    <h3>PUNTI FERROVIARI</h3>
     <div id="point-list"></div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    // 1. ATTENZIONE: Il nome deve essere ESATTAMENTE come su GitHub (Maiuscole incluse!)
+    // Verifica che il nome file sia identico a quello su GitHub
     const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
 
-    // Inizializziamo la mappa solo quando il DOM è pronto
-    window.onload = function() {
+    // Funzione di avvio
+    function initMap() {
+        // Se Leaflet è caricato correttamente, 'L' esiste
+        if (typeof L === 'undefined') {
+            console.error("Errore: Libreria Leaflet non caricata!");
+            return;
+        }
+
         const map = L.map('map', {
             crs: L.CRS.Simple,
             minZoom: -3,
             maxZoom: 2
         });
 
-        // Definiamo un'area di lavoro standard
+        // Griglia 0-1000 per posizionare l'immagine
         const bounds = [[0, 0], [1000, 1000]];
         
-        // Carichiamo l'immagine
+        // Caricamento immagine locale
         const mapImage = L.imageOverlay(imgName, bounds).addTo(map);
 
-        // Forza la mappa a riconoscere la sua dimensione e centra l'immagine
+        // Centra e forza il ricalcolo delle dimensioni
         map.fitBounds(bounds);
-        setTimeout(() => { map.invalidateSize(); }, 200);
+        setTimeout(() => { map.invalidateSize(); }, 300);
 
-        // Esempio punto
-        const points = [{ name: "Test Point", coords: [500, 500] }];
+        // Esempio Punto (Centro Mappa)
+        const points = [{ name: "Punto di Test", coords: [500, 500] }];
         const listDiv = document.getElementById('point-list');
 
         points.forEach(p => {
@@ -59,11 +66,14 @@
             listDiv.appendChild(item);
         });
 
-        // Clicca per vedere le coordinate in Console (F12)
+        // Log coordinate in Console (F12) per aggiungere nuovi punti
         map.on('click', function(e) {
-            console.log("Coords: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
+            console.log("Nuove Coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
         });
-    };
+    }
+
+    // Avvia quando tutto è pronto
+    window.onload = initMap;
 </script>
 </body>
 </html>
