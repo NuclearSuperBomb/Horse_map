@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>RDR2 Map Editor</title>
+    <title>RDR2 Railroad Map - Community Editor</title>
     <link rel="stylesheet" href="leaflet.css" />
     <script src="leaflet.js"></script>
     <style>
@@ -22,16 +22,17 @@
             z-index: 2000; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         input { width: 92%; margin-bottom: 10px; padding: 6px; background: #333; color: white; border: 1px solid #555; }
-        button { width: 100%; padding: 8px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button { width: 100%; padding: 10px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: #ffcc00; color: #000; }
-        .btn-export { background: #444; color: #ffcc00; border: 1px solid #ffcc00; margin-top: 15px; }
-        button:hover { opacity: 0.8; }
+        .btn-github { background: #2ea44f; color: white; margin-top: 15px; }
+        button:hover { opacity: 0.8; transform: scale(1.02); }
 
         #coords-display {
             position: absolute; bottom: 10px; right: 10px;
             background: rgba(0, 0, 0, 0.7); color: #ffcc00;
             padding: 5px 10px; border: 1px solid #ffcc00; font-family: monospace; z-index: 2000;
         }
+        .session-info { font-size: 11px; color: #aaa; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -43,14 +44,19 @@
 
 <div id="map">
     <div id="add-point-panel">
-        <h4 style="margin:0 0 10px 0; color:#ffcc00">Editor Mappa</h4>
+        <h4 style="margin:0 0 10px 0; color:#ffcc00">Sessione Contributo</h4>
         <input type="text" id="p-name" placeholder="Nome punto...">
         <input type="text" id="p-coords" placeholder="Clicca sulla mappa" readonly>
-        <button class="btn-add" onclick="addNewPoint()">Aggiungi Punto</button>
+        <button class="btn-add" onclick="addNewPoint()">Aggiungi alla Lista</button>
         
+        <div class="session-info">
+            Punti pronti per l'invio: <b id="count-val" style="color:#ffcc00">0</b>
+        </div>
+
         <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
         
-        <button class="btn-export" onclick="exportPoints()">Esporta per il Codice</button>
+        <button class="btn-github" onclick="submitAllToGithub()">INVIA TUTTI SU GITHUB</button>
+        <p style="font-size: 9px; color: #888; margin-top: 5px; text-align: center;">Verrà aperta una nuova segnalazione (Issue) con tutti i punti segnati.</p>
     </div>
     <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
 </div>
@@ -58,14 +64,24 @@
 <script>
     const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
     let map, listDiv;
-    let savedPoints = []; // Array per tenere traccia dei punti aggiunti
+    let savedPoints = []; // Punti della sessione corrente
+
+    // Inserisci qui i punti definitivi (quelli che hai già approvato)
+    const permanentPoints = [
+        // { name: "Esempio", coords: [500, 500] },
+    ];
 
     function initMap() {
+        if (typeof L === 'undefined') return;
+
         map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 5, zoomSnap: 0.1 });
         const bounds = [[0, 0], [1000, 1000]];
         L.imageOverlay(imgName, bounds, { maxNativeZoom: 2, maxZoom: 5 }).addTo(map);
         map.fitBounds(bounds);
         listDiv = document.getElementById('point-list');
+
+        // Carica i punti già esistenti nel codice
+        permanentPoints.forEach(p => addMarkerToList(p, false));
 
         map.on('mousemove', (e) => {
             document.getElementById('coords-display').innerHTML = `Lat: ${e.latlng.lat.toFixed(1)}, Lng: ${e.latlng.lng.toFixed(1)}`;
@@ -76,6 +92,15 @@
         });
     }
 
+    function addMarkerToList(p, isNew) {
+        const marker = L.marker(p.coords).addTo(map).bindPopup(`<b>${p.name}</b>${isNew ? '<br><small>(Sessione attuale)</small>' : ''}`);
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerText = p.name;
+        item.onclick = () => { map.setView(p.coords, 3); marker.openPopup(); };
+        listDiv.appendChild(item);
+    }
+
     function addNewPoint() {
         const name = document.getElementById('p-name').value;
         const coordsRaw = document.getElementById('p-coords').value;
@@ -83,39 +108,30 @@
         if (!name || !coordsRaw) { alert("Inserisci un nome e clicca sulla mappa!"); return; }
 
         const coords = coordsRaw.split(',').map(Number);
+        const newP = { name: name, coords: coords };
         
-        // Salviamo il punto nell'array per l'esportazione
-        savedPoints.push({ name: name, coords: coords });
+        savedPoints.push(newP);
+        addMarkerToList(newP, true);
 
-        // Aggiungi Marker visivo
-        const marker = L.marker(coords).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
-
-        // Aggiungi alla lista laterale
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerText = name;
-        item.onclick = () => { map.setView(coords, 3); marker.openPopup(); };
-        listDiv.appendChild(item);
-
-        // Reset campi
+        document.getElementById('count-val').innerText = savedPoints.length;
         document.getElementById('p-name').value = '';
         document.getElementById('p-coords').value = '';
     }
 
-    function exportPoints() {
-        if (savedPoints.length === 0) { alert("Nessun punto da esportare!"); return; }
+    function submitAllToGithub() {
+        if (savedPoints.length === 0) { alert("Aggiungi almeno un punto prima di inviare!"); return; }
 
-        let output = "Copia questo blocco di codice sotto la riga 'const points = [':\n\n";
+        const repoUrl = "https://github.com";
+        const title = encodeURIComponent("CONTRIBUTO MAPPA: " + savedPoints.length + " nuovi punti");
+        
+        let bodyContent = "Per favore aggiungi questi punti al file index.html:\n\n```javascript\n";
         savedPoints.forEach(p => {
-            output += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
+            bodyContent += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
         });
+        bodyContent += "```";
 
-        // Crea un file temporaneo per il download
-        const blob = new Blob([output], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'punti_mappa.txt';
-        a.click();
+        const finalUrl = `${repoUrl}?title=${title}&body=${encodeURIComponent(bodyContent)}`;
+        window.open(finalUrl, '_blank');
     }
 
     window.onload = initMap;
