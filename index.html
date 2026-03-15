@@ -36,11 +36,18 @@
         const map = L.map('map', {
             crs: L.CRS.Simple,
             minZoom: -3,
-            maxZoom: 2
+            maxZoom: 5,       // Zoom massimo aumentato
+            zoomSnap: 0.1     // Zoom più fluido
         });
 
         const bounds = [[0, 0], [1000, 1000]];
-        L.imageOverlay(imgName, bounds).addTo(map);
+        
+        // Aggiunta opzioni zoom all'immagine
+        L.imageOverlay(imgName, bounds, {
+            maxNativeZoom: 2, // Lo zoom reale dell'immagine
+            maxZoom: 5        // Permette di ingrandire oltre i pixel reali
+        }).addTo(map);
+
         map.fitBounds(bounds);
 
         // Esempio punto
@@ -52,7 +59,10 @@
             const item = document.createElement('div');
             item.className = 'list-item';
             item.innerText = p.name;
-            item.onclick = () => { map.setView(p.coords, 1); marker.openPopup(); };
+            item.onclick = () => { 
+                map.setView(p.coords, 3); // Quando clicchi sulla lista, zooma più vicino (livello 3)
+                marker.openPopup(); 
+            };
             listDiv.appendChild(item);
         });
 
