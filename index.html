@@ -3,18 +3,20 @@
 <head>
     <title>RDR2 Railroad Map</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
     <style>
-        body { margin: 0; display: flex; background: #121212; color: #e0e0e0; font-family: sans-serif; }
-        #sidebar { width: 250px; height: 100vh; background: #1e1e1e; overflow-y: auto; border-right: 1px solid #333; z-index: 1000; }
-        #map { flex-grow: 1; height: 100vh; background: #000; }
+        body { margin: 0; display: flex; background: #121212; color: #e0e0e0; font-family: sans-serif; height: 100vh; }
+        #sidebar { width: 250px; background: #1e1e1e; overflow-y: auto; border-right: 1px solid #333; }
+        #map { flex-grow: 1; background: #000; cursor: crosshair; }
         .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffcc00; z-index: 2000; }
     </style>
 </head>
 <body>
+
+<div id="loading">Caricamento Mappa (60MB)... attendi qualche secondo</div>
 
 <div id="sidebar">
     <h3 style="text-align:center; color:#ffcc00">PUNTI FERROVIARI</h3>
@@ -24,34 +26,30 @@
 <div id="map"></div>
 
 <script>
-    // 1. Setup dimensioni reali dell'immagine
-    const w = 11322; 
-    const h = 8251;
     const url = 'https://files.catbox.moe';
 
-    // 2. Inizializza la mappa
+    // 1. Setup Mappa semplificato
     const map = L.map('map', {
         crs: L.CRS.Simple,
-        minZoom: -4,
+        minZoom: -2,
         maxZoom: 2
     });
 
-    // 3. Definiamo i confini: [ [0,0], [altezza, larghezza] ]
-    const southWest = map.unproject([0, h], map.getMaxZoom());
-    const northEast = map.unproject([w, 0], map.getMaxZoom());
-    const bounds = new L.LatLngBounds(southWest, northEast);
+    // Usiamo coordinate fisse 0-1000 per semplicità
+    const bounds = [[0, 0], [1000, 1000]];
+    const image = L.imageOverlay(url, bounds).addTo(map);
 
-    // Aggiungiamo l'immagine
-    L.imageOverlay(url, bounds).addTo(map);
-
-    // Centriamo la mappa
-    map.setMaxBounds(bounds);
     map.fitBounds(bounds);
 
-    // 4. Esempio Punti (Coordinate placeholder)
+    // Nasconde il testo "Caricamento" quando l'immagine è pronta
+    image.on('load', function() {
+        document.getElementById('loading').style.display = 'none';
+    });
+
+    // 2. PUNTI DI ESEMPIO (Usa numeri tra 0 e 1000)
+    // [Y, X] -> 0 è il basso/sinistra, 1000 è l'alto/destra
     const points = [
-        { name: "Punto Prova 1", coords: [-30, 40] },
-        { name: "Punto Prova 2", coords: [-50, 100] }
+        { name: "Punto di Test", coords: [500, 500] }
     ];
 
     const listDiv = document.getElementById('point-list');
@@ -60,14 +58,13 @@
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = p.name;
-        item.onclick = () => { map.setView(p.coords, 0); marker.openPopup(); };
+        item.onclick = () => { map.setView(p.coords, 1); marker.openPopup(); };
         listDiv.appendChild(item);
     });
 
-    // --- FUNZIONE PER TROVARE LE COORDINATE ---
-    // Clicca sulla mappa e premi F12 (Console) per vedere dove hai cliccato
+    // 3. LOG COORDINATE (Premi F12 e guarda la Console per i tuoi nuovi punti)
     map.on('click', function(e) {
-        console.log("Coordinate cliccate: [" + e.latlng.lat + ", " + e.latlng.lng + "]");
+        console.log("Copia queste coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
     });
 </script>
 </body>
