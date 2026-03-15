@@ -93,6 +93,9 @@
     function initMap() {
         if (typeof L === 'undefined') return;
         map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 5, zoomSnap: 0.1 });
+        const uiPanel = document.getElementById('add-point-panel');
+    L.DomEvent.disableClickPropagation(uiPanel);
+    L.DomEvent.disableScrollPropagation(uiPanel);
         const bounds = [[0, 0], [1000, 1000]];
         L.imageOverlay(imgName, bounds, { maxNativeZoom: 2, maxZoom: 5 }).addTo(map);
         map.fitBounds(bounds);
