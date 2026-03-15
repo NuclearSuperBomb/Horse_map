@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>RDR2 Railroad Map</title>
+    <title>RDR2 Map Editor</title>
     <link rel="stylesheet" href="leaflet.css" />
     <script src="leaflet.js"></script>
     <style>
@@ -10,24 +10,27 @@
         body { display: flex; font-family: sans-serif; }
         #sidebar { width: 250px; background: #1a1a1a; color: white; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
         #map { flex: 1; height: 100%; background: #0b0b0b; position: relative; }
+        
         .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
-        h3 { text-align: center; color: #ffcc00; margin: 20px 0; }
+        h3 { text-align: center; color: #ffcc00; margin: 15px 0; }
 
-        /* Stile per l'indicatore di coordinate */
+        #add-point-panel {
+            position: absolute; top: 10px; left: 260px;
+            background: rgba(26, 26, 26, 0.95); color: white;
+            padding: 15px; border: 1px solid #ffcc00; border-radius: 8px;
+            z-index: 2000; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        input { width: 92%; margin-bottom: 10px; padding: 6px; background: #333; color: white; border: 1px solid #555; }
+        button { width: 100%; padding: 8px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: #ffcc00; color: #000; }
+        .btn-export { background: #444; color: #ffcc00; border: 1px solid #ffcc00; margin-top: 15px; }
+        button:hover { opacity: 0.8; }
+
         #coords-display {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #ffcc00;
-            padding: 5px 10px;
-            border: 1px solid #ffcc00;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-            z-index: 2000;
-            pointer-events: none; /* Non blocca i click sulla mappa */
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(0, 0, 0, 0.7); color: #ffcc00;
+            padding: 5px 10px; border: 1px solid #ffcc00; font-family: monospace; z-index: 2000;
         }
     </style>
 </head>
@@ -39,63 +42,80 @@
 </div>
 
 <div id="map">
-    <!-- Box delle coordinate -->
+    <div id="add-point-panel">
+        <h4 style="margin:0 0 10px 0; color:#ffcc00">Editor Mappa</h4>
+        <input type="text" id="p-name" placeholder="Nome punto...">
+        <input type="text" id="p-coords" placeholder="Clicca sulla mappa" readonly>
+        <button class="btn-add" onclick="addNewPoint()">Aggiungi Punto</button>
+        
+        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+        
+        <button class="btn-export" onclick="exportPoints()">Esporta per il Codice</button>
+    </div>
     <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
 </div>
 
 <script>
     const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
+    let map, listDiv;
+    let savedPoints = []; // Array per tenere traccia dei punti aggiunti
 
     function initMap() {
-        if (typeof L === 'undefined') {
-            alert("Errore: Il file leaflet.js non è stato trovato!");
-            return;
-        }
-
-        const map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -3,
-            maxZoom: 5,
-            zoomSnap: 0.1
-        });
-
+        map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 5, zoomSnap: 0.1 });
         const bounds = [[0, 0], [1000, 1000]];
-        
-        L.imageOverlay(imgName, bounds, {
-            maxNativeZoom: 2,
-            maxZoom: 5
-        }).addTo(map);
-
+        L.imageOverlay(imgName, bounds, { maxNativeZoom: 2, maxZoom: 5 }).addTo(map);
         map.fitBounds(bounds);
+        listDiv = document.getElementById('point-list');
 
-        // --- GESTIONE COORDINATE AL MOVIMENTO DEL MOUSE ---
-        const coordsDiv = document.getElementById('coords-display');
-        map.on('mousemove', function(e) {
-            const lat = e.latlng.lat.toFixed(1);
-            const lng = e.latlng.lng.toFixed(1);
-            coordsDiv.innerHTML = `Lat: ${lat}, Lng: ${lng}`;
+        map.on('mousemove', (e) => {
+            document.getElementById('coords-display').innerHTML = `Lat: ${e.latlng.lat.toFixed(1)}, Lng: ${e.latlng.lng.toFixed(1)}`;
         });
 
-        // Esempio punti
-        const points = [{ name: "Punto di Test", coords: [500, 500] }];
-        const listDiv = document.getElementById('point-list');
+        map.on('click', (e) => {
+            document.getElementById('p-coords').value = `${e.latlng.lat.toFixed(1)}, ${e.latlng.lng.toFixed(1)}`;
+        });
+    }
 
-        points.forEach(p => {
-            const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            item.innerText = p.name;
-            item.onclick = () => { 
-                map.setView(p.coords, 3);
-                marker.openPopup(); 
-            };
-            listDiv.appendChild(item);
+    function addNewPoint() {
+        const name = document.getElementById('p-name').value;
+        const coordsRaw = document.getElementById('p-coords').value;
+        
+        if (!name || !coordsRaw) { alert("Inserisci un nome e clicca sulla mappa!"); return; }
+
+        const coords = coordsRaw.split(',').map(Number);
+        
+        // Salviamo il punto nell'array per l'esportazione
+        savedPoints.push({ name: name, coords: coords });
+
+        // Aggiungi Marker visivo
+        const marker = L.marker(coords).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
+
+        // Aggiungi alla lista laterale
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerText = name;
+        item.onclick = () => { map.setView(coords, 3); marker.openPopup(); };
+        listDiv.appendChild(item);
+
+        // Reset campi
+        document.getElementById('p-name').value = '';
+        document.getElementById('p-coords').value = '';
+    }
+
+    function exportPoints() {
+        if (savedPoints.length === 0) { alert("Nessun punto da esportare!"); return; }
+
+        let output = "Copia questo blocco di codice sotto la riga 'const points = [':\n\n";
+        savedPoints.forEach(p => {
+            output += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
         });
 
-        // Log in console al click (utile per copiare i valori esatti)
-        map.on('click', function(e) {
-            console.log("Coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
-        });
+        // Crea un file temporaneo per il download
+        const blob = new Blob([output], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'punti_mappa.txt';
+        a.click();
     }
 
     window.onload = initMap;
