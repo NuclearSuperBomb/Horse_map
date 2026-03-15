@@ -4,82 +4,71 @@
     <title>RDR2 Railroad Map</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Leaflet CSS/JS -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
-
     <style>
-        body { margin: 0; display: flex; background: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #sidebar { width: 280px; height: 100vh; background: #1e1e1e; overflow-y: auto; border-right: 1px solid #333; z-index: 1000; }
-        #map { flex-grow: 1; height: 100vh; background: #0b0b0b; }
-        
-        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.2s; }
+        body { margin: 0; display: flex; background: #121212; color: #e0e0e0; font-family: sans-serif; }
+        #sidebar { width: 250px; height: 100vh; background: #1e1e1e; overflow-y: auto; border-right: 1px solid #333; z-index: 1000; }
+        #map { flex-grow: 1; height: 100vh; background: #000; }
+        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
-        h3 { padding: 20px; margin: 0; background: #111; text-align: center; color: #ffcc00; letter-spacing: 1px; border-bottom: 2px solid #ffcc00; }
-        
-        /* Stile popup mappa */
-        .leaflet-popup-content-wrapper { background: #222; color: #fff; border: 1px solid #ffcc00; }
-        .leaflet-popup-tip { background: #ffcc00; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h3>PUNTI FERROVIARI</h3>
+    <h3 style="text-align:center; color:#ffcc00">PUNTI FERROVIARI</h3>
     <div id="point-list"></div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    // 1. Configurazione Immagine (Link Catbox)
-    const imageUrl = 'https://files.catbox.moe/enqjwl.jpg';
-    const w = 11322; // Larghezza reale immagine
-    const h = 8251;  // Altezza reale immagine
+    // 1. Setup dimensioni reali dell'immagine
+    const w = 11322; 
+    const h = 8251;
+    const url = 'https://files.catbox.moe';
 
-    // 2. Setup Mappa
+    // 2. Inizializza la mappa
     const map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -4,
-        maxZoom: 1,
-        zoomSnap: 0.5
+        maxZoom: 2
     });
 
-    // Definiamo i confini dell'immagine [Y, X] -> [Altezza, Larghezza]
-    // Invertiamo la Y per far sì che 0,0 sia in alto a sinistra
-    const bounds = [[0, 0], [h, w]];
-    L.imageOverlay(imageUrl, bounds).addTo(map);
+    // 3. Definiamo i confini: [ [0,0], [altezza, larghezza] ]
+    const southWest = map.unproject([0, h], map.getMaxZoom());
+    const northEast = map.unproject([w, 0], map.getMaxZoom());
+    const bounds = new L.LatLngBounds(southWest, northEast);
 
-    // Adatta la visuale all'intera immagine all'inizio
+    // Aggiungiamo l'immagine
+    L.imageOverlay(url, bounds).addTo(map);
+
+    // Centriamo la mappa
+    map.setMaxBounds(bounds);
     map.fitBounds(bounds);
 
-    // 3. I tuoi Punti di Interesse
-    // IMPORTANTE: Le coordinate in Leaflet Simple sono [Y, X]
-    // Poiché l'immagine è alta 8251, un punto a metà altezza sarà ~4125
+    // 4. Esempio Punti (Coordinate placeholder)
     const points = [
-        { name: "Stazione Principale", coords: [4000, 5000] }, // Esempio: cambia questi numeri
-        { name: "Ponte J10", coords: [3500, 7000] },
-        { name: "Deposito Carbone", coords: [6000, 2000] }
+        { name: "Punto Prova 1", coords: [-30, 40] },
+        { name: "Punto Prova 2", coords: [-50, 100] }
     ];
 
     const listDiv = document.getElementById('point-list');
-
     points.forEach(p => {
-        // Aggiunge Marker
-        const marker = L.marker(p.coords).addTo(map).bindPopup(`<b>${p.name}</b>`);
-
-        // Aggiunge alla lista laterale
+        const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = p.name;
-        item.onclick = () => {
-            map.setView(p.coords, -1, { animate: true }); // Zoom ravvicinato al click
-            marker.openPopup();
-        };
+        item.onclick = () => { map.setView(p.coords, 0); marker.openPopup(); };
         listDiv.appendChild(item);
     });
-</script>
 
+    // --- FUNZIONE PER TROVARE LE COORDINATE ---
+    // Clicca sulla mappa e premi F12 (Console) per vedere dove hai cliccato
+    map.on('click', function(e) {
+        console.log("Coordinate cliccate: [" + e.latlng.lat + ", " + e.latlng.lng + "]");
+    });
+</script>
 </body>
 </html>
