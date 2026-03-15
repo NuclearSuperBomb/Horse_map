@@ -24,7 +24,8 @@
         input { width: 92%; margin-bottom: 10px; padding: 6px; background: #333; color: white; border: 1px solid #555; }
         button { width: 100%; padding: 10px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: #ffcc00; color: #000; }
-        .btn-github { background: #2ea44f; color: white; margin-top: 15px; }
+        .btn-undo { background: #444; color: #eee; font-size: 11px; margin-top: 5px; }
+        .btn-github { background: #2ea44f; color: white; margin-top: 15px; height: 50px; }
         button:hover { opacity: 0.8; transform: scale(1.02); }
 
         #coords-display {
@@ -48,15 +49,15 @@
         <input type="text" id="p-name" placeholder="Nome punto...">
         <input type="text" id="p-coords" placeholder="Clicca sulla mappa" readonly>
         <button class="btn-add" onclick="addNewPoint()">Aggiungi alla Lista</button>
+        <button class="btn-undo" onclick="undoLastPoint()">Annulla Ultimo Click</button>
         
         <div class="session-info">
-            Punti pronti per l'invio: <b id="count-val" style="color:#ffcc00">0</b>
+            Punti in attesa: <b id="count-val" style="color:#ffcc00">0</b>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
         
         <button class="btn-github" onclick="submitAllToGithub()">INVIA TUTTI SU GITHUB</button>
-        <p style="font-size: 9px; color: #888; margin-top: 5px; text-align: center;">Verrà aperta una nuova segnalazione (Issue) con tutti i punti segnati.</p>
     </div>
     <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
 </div>
@@ -64,12 +65,11 @@
 <script>
     const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
     let map, listDiv;
-    let savedPoints = []; // Punti della sessione corrente
+    let savedPoints = []; 
+    let sessionMarkers = []; // Per poterli rimuovere con "Annulla"
 
-    // Inserisci qui i punti definitivi (quelli che hai già approvato)
-    const permanentPoints = [
-        // { name: "Esempio", coords: [500, 500] },
-    ];
+    // Qui incollerai i punti approvati in futuro
+    const permanentPoints = [];
 
     function initMap() {
         if (typeof L === 'undefined') return;
@@ -80,7 +80,6 @@
         map.fitBounds(bounds);
         listDiv = document.getElementById('point-list');
 
-        // Carica i punti già esistenti nel codice
         permanentPoints.forEach(p => addMarkerToList(p, false));
 
         map.on('mousemove', (e) => {
@@ -93,9 +92,12 @@
     }
 
     function addMarkerToList(p, isNew) {
-        const marker = L.marker(p.coords).addTo(map).bindPopup(`<b>${p.name}</b>${isNew ? '<br><small>(Sessione attuale)</small>' : ''}`);
+        const marker = L.marker(p.coords).addTo(map).bindPopup(`<b>${p.name}</b>`);
+        if(isNew) sessionMarkers.push(marker);
+
         const item = document.createElement('div');
         item.className = 'list-item';
+        item.id = isNew ? 'session-' + (sessionMarkers.length - 1) : '';
         item.innerText = p.name;
         item.onclick = () => { map.setView(p.coords, 3); marker.openPopup(); };
         listDiv.appendChild(item);
@@ -105,7 +107,7 @@
         const name = document.getElementById('p-name').value;
         const coordsRaw = document.getElementById('p-coords').value;
         
-        if (!name || !coordsRaw) { alert("Inserisci un nome e clicca sulla mappa!"); return; }
+        if (!name || !coordsRaw) { alert("Nome o coordinate mancanti!"); return; }
 
         const coords = coordsRaw.split(',').map(Number);
         const newP = { name: name, coords: coords };
@@ -118,11 +120,22 @@
         document.getElementById('p-coords').value = '';
     }
 
+    function undoLastPoint() {
+        if (savedPoints.length === 0) return;
+        
+        savedPoints.pop();
+        const lastMarker = sessionMarkers.pop();
+        map.removeLayer(lastMarker);
+        
+        listDiv.removeChild(listDiv.lastChild);
+        document.getElementById('count-val').innerText = savedPoints.length;
+    }
+
     function submitAllToGithub() {
         if (savedPoints.length === 0) { alert("Aggiungi almeno un punto prima di inviare!"); return; }
 
         const repoUrl = "https://github.com";
-        const title = encodeURIComponent("CONTRIBUTO MAPPA: " + savedPoints.length + " nuovi punti");
+        const title = "CONTRIBUTO MAPPA: " + savedPoints.length + " nuovi punti";
         
         let bodyContent = "Per favore aggiungi questi punti al file index.html:\n\n```javascript\n";
         savedPoints.forEach(p => {
@@ -130,8 +143,16 @@
         });
         bodyContent += "```";
 
-        const finalUrl = `${repoUrl}?title=${title}&body=${encodeURIComponent(bodyContent)}`;
-        window.open(finalUrl, '_blank');
+        const finalUrl = `${repoUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyContent)}`;
+        
+        if (finalUrl.length < 2000) {
+            window.open(finalUrl, '_blank');
+        } else {
+            navigator.clipboard.writeText(bodyContent).then(() => {
+                alert("Troppi punti! Il codice è stato copiato negli appunti.\nIncolla (Ctrl+V) nel box di descrizione su GitHub.");
+                window.open(`${repoUrl}?title=${encodeURIComponent(title)}`, '_blank');
+            });
+        }
     }
 
     window.onload = initMap;
