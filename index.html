@@ -1,38 +1,21 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>RDR2 Interactive Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Carica Leaflet CSS/JS -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+
     <style>
-        body { font-family: sans-serif; display: flex; margin: 0; background: #1a1a1a; color: white; }
-        #sidebar { width: 250px; background: #2c2c2c; padding: 20px; height: 100vh; overflow-y: auto; }
-        #map-container { flex-grow: 1; position: relative; overflow: auto; background: #000; }
-        
-        img { display: block; max-width: none; } /* Mantiene la dimensione reale della mappa */
-        
-        .poi {
-            position: absolute;
-            width: 20px; height: 20px;
-            background: red; border-radius: 50%;
-            cursor: pointer; transform: translate(-50%, -50%);
-            border: 2px solid white;
-        }
-
-        /* Tooltip che appare al passaggio del mouse */
-        .poi:hover::after {
-            content: attr(data-name);
-            position: absolute; top: -30px; left: 50%;
-            transform: translateX(-50%);
-            background: black; padding: 5px 10px;
-            border-radius: 5px; white-space: nowrap; font-size: 14px;
-        }
-
-        .list-item { 
-            padding: 10px; cursor: pointer; border-bottom: 1px solid #444; 
-        }
-        .list-item:hover { background: #444; }
-        
-        .highlight { box-shadow: 0 0 15px 5px yellow; border-color: yellow; }
+        body { margin: 0; display: flex; background: #1a1a1a; color: white; font-family: sans-serif; }
+        #sidebar { width: 250px; height: 100vh; background: #2c2c2c; overflow-y: auto; z-index: 1000; }
+        #map { flex-grow: 1; height: 100vh; background: #000; }
+        .list-item { padding: 15px; border-bottom: 1px solid #444; cursor: pointer; }
+        .list-item:hover { background: #3d3d3d; }
+        h3 { padding: 10px; margin: 0; background: #111; text-align: center; }
     </style>
 </head>
 <body>
@@ -42,48 +25,45 @@
     <div id="point-list"></div>
 </div>
 
-<div id="map-container" id="container">
-    <!-- Cambia il link con quello della tua immagine -->
-    <img src="https://files.catbox.moe/enqjwl.jpg" id="map-img">
-    <div id="markers"></div>
-</div>
+<div id="map"></div>
 
 <script>
-    // 2. AGGIUNGI QUI I TUOI PUNTI (X e Y sono le coordinate in pixel)
+    // 1. Configurazione Immagine
+    const imageUrl = 'https://files.catbox.moe/enqjwl.jpg'; // Assicurati che il nome sia corretto
+    const imageWidth = 10000;  // Inserisci la larghezza reale in pixel della tua immagine
+    const imageHeight = 8000;  // Inserisci l'altezza reale in pixel della tua immagine
+
+    // 2. Creazione della Mappa
+    const map = L.map('map', {
+        crs: L.CRS.Simple, // Sistema di coordinate basato sui pixel, non sulla Terra
+        minZoom: -3,       // Permette di rimpicciolire per vedere tutta la mappa
+        maxZoom: 1,        // Permette di zoomare molto vicino
+    });
+
+    const bounds = [[0, 0], [imageHeight, imageWidth]];
+    L.imageOverlay(imageUrl, bounds).addTo(map);
+    map.fitBounds(bounds); // Adatta automaticamente l'immagine allo schermo all'avvio
+
+    // 3. Punti di Interesse (Usa le coordinate Y e X invertite: [Altezza, Larghezza])
+    // Nota: in Leaflet.js [0,0] è l'angolo in basso a sinistra.
     const points = [
-        { name: "Stazione Ferroviaria", x: 5070, y: 12508 },
-        { name: "Accampamento", x: 6000, y: 11000 },
-        { name: "Ponte Vecchio", x: 7500, y: 12000 }
+        { name: "Stazione Ferroviaria", coords: [12508, 5070] },
+        { name: "Accampamento", coords: [11000, 6000] }
     ];
 
-    const markersDiv = document.getElementById('markers');
     const listDiv = document.getElementById('point-list');
-    const container = document.getElementById('map-container');
 
-    points.forEach((p, index) => {
-        // Crea il pallino sulla mappa
-        const marker = document.createElement('div');
-        marker.className = 'poi';
-        marker.style.left = p.x + 'px';
-        marker.style.top = p.y + 'px';
-        marker.setAttribute('data-name', p.name);
-        marker.id = 'marker-' + index;
-        markersDiv.appendChild(marker);
+    points.forEach(p => {
+        // Aggiunge il Marker sulla mappa
+        const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
 
-        // Crea l'elemento nella lista laterale
+        // Aggiunge l'elemento alla lista laterale
         const item = document.createElement('div');
         item.className = 'list-item';
         item.innerText = p.name;
         item.onclick = () => {
-            // Centra la mappa sul punto cliccato
-            container.scrollTo({
-                left: p.x - (container.clientWidth / 2),
-                top: p.y - (container.clientHeight / 2),
-                behavior: 'smooth'
-            });
-            // Effetto flash sul marker
-            marker.classList.add('highlight');
-            setTimeout(() => marker.classList.remove('highlight'), 2000);
+            map.setView(p.coords, 0); // Sposta la visuale sul punto
+            marker.openPopup();       // Apre il fumetto col nome
         };
         listDiv.appendChild(item);
     });
