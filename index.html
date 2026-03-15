@@ -23,7 +23,8 @@
         button { width: 100%; padding: 10px; margin-top: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: #ffcc00; color: #000; }
         .btn-undo { background: #444; color: #eee; font-size: 11px; margin-top: 5px; }
-        .btn-github { background: #2ea44f; color: white; margin-top: 15px; height: 50px; }
+        /* Stile pulsante Discord */
+        .btn-discord { background: #5865F2; color: white; margin-top: 15px; height: 50px; }
         button:hover { opacity: 0.8; transform: scale(1.02); }
         #coords-display {
             position: absolute; bottom: 10px; right: 10px;
@@ -54,7 +55,7 @@
 
         <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
         
-        <button class="btn-github" onclick="copyAndGoToGithub()">COPIA E INVIA SU GITHUB</button>
+        <button class="btn-discord" onclick="sendToDiscord()">INVIA SU DISCORD</button>
     </div>
     <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
 </div>
@@ -65,7 +66,7 @@
     let savedPoints = []; 
     let sessionMarkers = [];
 
-    // Punti definitivi approvati (lascia vuoto se non ne hai ancora)
+    // Incolla i punti approvati qui dentro tra le parentesi quadre
     const permanentPoints = [];
 
     function initMap() {
@@ -121,21 +122,47 @@
         document.getElementById('count-val').innerText = savedPoints.length;
     }
 
-    function copyAndGoToGithub() {
+    async function sendToDiscord() {
         if (savedPoints.length === 0) { alert("Nessun punto da inviare!"); return; }
 
-        let bodyContent = "Per favore aggiungi questi punti:\n\n```javascript\n";
-        savedPoints.forEach(p => {
-            bodyContent += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
-        });
-        bodyContent += "```";
+        // --- INSERISCI IL TUO WEBHOOK QUI ---
+        const webhookURL = "https://discord.com/api/webhooks/1482787286180696237/QWpblUkLsglF0zWByCS2PWE4Agnj4ETRcug9fCmUOY8qKw6TpTRr4j3g_P1EnIOlzyut";
 
-        // Copia il codice negli appunti
-        navigator.clipboard.writeText(bodyContent).then(() => {
-            alert("✅ CODICE COPIATO NEGLI APPUNTI!\n\nOra verrai indirizzato su GitHub. Crea una nuova Issue e incolla (Ctrl+V) il contenuto.");
-            // Apriamo direttamente la pagina del tuo repo, non l'URL lungo
-            window.open("https://github.com", "_blank");
+        let pointsText = "Per favore aggiungi questi punti al file:\n```javascript\n";
+        savedPoints.forEach(p => {
+            pointsText += `{ name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
         });
+        pointsText += "```";
+
+        const payload = {
+            username: "RDR2 Map Bot",
+            embeds: [{
+                title: "📍 Nuovi Punti Ricevuti",
+                description: pointsText,
+                color: 16764160 // Oro
+            }]
+        };
+
+        try {
+            const response = await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("✅ Inviato correttamente a Discord!");
+                // Pulisce la sessione dopo l'invio
+                savedPoints = [];
+                sessionMarkers.forEach(m => map.removeLayer(m));
+                sessionMarkers = [];
+                document.getElementById('count-val').innerText = "0";
+            } else {
+                alert("❌ Errore durante l'invio. Controlla il Webhook.");
+            }
+        } catch (error) {
+            alert("❌ Errore di connessione.");
+        }
     }
 
     window.onload = initMap;
