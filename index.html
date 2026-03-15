@@ -1,3 +1,29 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>RDR2 Railroad Map</title>
+    <!-- CARICAMENTO LOCALE - Molto più sicuro -->
+    <link rel="stylesheet" href="leaflet.css" />
+    <script src="leaflet.js"></script>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; background: #000; overflow: hidden; }
+        body { display: flex; font-family: sans-serif; }
+        #sidebar { width: 250px; background: #1a1a1a; color: white; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
+        #map { flex: 1; height: 100%; background: #0b0b0b; }
+        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
+        .list-item:hover { background: #2a2a2a; color: #ffcc00; }
+        h3 { text-align: center; color: #ffcc00; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h3>PUNTI FERROVIARI</h3>
+    <div id="point-list"></div>
+</div>
+<div id="map"></div>
+
 const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
 
 function initMap() {
@@ -50,3 +76,7 @@ function initMap() {
 }
 
 window.onload = initMap;
+
+</script>
+</body>
+</html>
