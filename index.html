@@ -131,29 +131,42 @@
         document.getElementById('count-val').innerText = savedPoints.length;
     }
 
-    function submitAllToGithub() {
-        if (savedPoints.length === 0) { alert("Aggiungi almeno un punto prima di inviare!"); return; }
-
-        const repoUrl = "https://github.com";
-        const title = "CONTRIBUTO MAPPA: " + savedPoints.length + " nuovi punti";
-        
-        let bodyContent = "Per favore aggiungi questi punti al file index.html:\n\n```javascript\n";
-        savedPoints.forEach(p => {
-            bodyContent += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
-        });
-        bodyContent += "```";
-
-        const finalUrl = `${repoUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyContent)}`;
-        
-        if (finalUrl.length < 2000) {
-            window.open(finalUrl, '_blank');
-        } else {
-            navigator.clipboard.writeText(bodyContent).then(() => {
-                alert("Troppi punti! Il codice è stato copiato negli appunti.\nIncolla (Ctrl+V) nel box di descrizione su GitHub.");
-                window.open(`${repoUrl}?title=${encodeURIComponent(title)}`, '_blank');
-            });
-        }
+function submitAllToGithub() {
+    if (savedPoints.length === 0) { 
+        alert("Aggiungi almeno un punto prima di inviare!"); 
+        return; 
     }
+
+    // URL DIRETTO AL TUO REPOSITORY
+    const repoUrl = "https://github.com";
+    const title = "CONTRIBUTO MAPPA: " + savedPoints.length + " nuovi punti";
+    
+    let bodyContent = "Per favore aggiungi questi punti al file index.html:\n\n```javascript\n";
+    savedPoints.forEach(p => {
+        // Usiamo le coordinate corrette dell'array
+        bodyContent += `    { name: "${p.name}", coords: [${p.coords[0]}, ${p.coords[1]}] },\n`;
+    });
+    bodyContent += "```";
+
+    // Prepariamo i parametri
+    const params = new URLSearchParams({
+        title: title,
+        body: bodyContent
+    });
+
+    const finalUrl = `${repoUrl}?${params.toString()}`;
+    
+    // Se l'URL è troppo lungo (oltre 2000 caratteri), GitHub lo rifiuta
+    if (finalUrl.length < 2000) {
+        window.open(finalUrl, '_blank');
+    } else {
+        // Fallback: copia negli appunti se i punti sono troppi
+        navigator.clipboard.writeText(bodyContent).then(() => {
+            alert("Hai segnato troppi punti per un invio automatico!\n\nIl codice è stato COPIATO negli appunti.\nOra verrai mandato su GitHub: clicca nel box della descrizione e premi Incolla (Ctrl+V).");
+            window.open(repoUrl, '_blank');
+        });
+    }
+}
 
     window.onload = initMap;
 </script>
