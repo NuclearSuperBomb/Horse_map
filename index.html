@@ -1,67 +1,52 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>RDR2 Railroad Map</title>
-    <!-- CARICAMENTO LOCALE - Molto più sicuro -->
-    <link rel="stylesheet" href="leaflet.css" />
-    <script src="leaflet.js"></script>
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; background: #000; overflow: hidden; }
-        body { display: flex; font-family: sans-serif; }
-        #sidebar { width: 250px; background: #1a1a1a; color: white; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
-        #map { flex: 1; height: 100%; background: #0b0b0b; }
-        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
-        .list-item:hover { background: #2a2a2a; color: #ffcc00; }
-        h3 { text-align: center; color: #ffcc00; margin: 20px 0; }
-    </style>
-</head>
-<body>
+const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
 
-<div id="sidebar">
-    <h3>PUNTI FERROVIARI</h3>
-    <div id="point-list"></div>
-</div>
-<div id="map"></div>
+function initMap() {
+    if (typeof L === 'undefined') return;
 
-<script>
-    const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
+    // Configurazione del Sistema di Coordinate Personalizzato (RDR2 Scale)
+    // Trasformiamo i pixel in modo che corrispondano ai tuoi valori negativi/positivi
+    const factor = 0.1; // Fattore di scala per gestire i numeri grandi di RDR2
+    
+    const map = L.map('map', {
+        crs: L.Util.extend({}, L.CRS.Simple, {
+            transformation: new L.Transformation(factor, 0, -factor, 0)
+        }),
+        minZoom: -5,
+        maxZoom: 2
+    });
 
-    function initMap() {
-        if (typeof L === 'undefined') {
-            alert("Errore: Il file leaflet.js non è stato trovato nel tuo GitHub!");
-            return;
-        }
+    // Punti di riferimento per calcolare i confini (basati sui tuoi dati)
+    // Abbiamo bisogno di definire un'area che contenga tutti i tuoi punti reali
+    const southWest = L.latLng(-6000, -3000); 
+    const northEast = L.latLng(4000, 3000);
+    const bounds = new L.LatLngBounds(southWest, northEast);
 
-        const map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -3,
-            maxZoom: 2
-        });
+    // Carichiamo l'immagine adattandola ai nuovi confini reali
+    L.imageOverlay(imgName, bounds).addTo(map);
+    map.fitBounds(bounds);
 
-        const bounds = [[0, 0], [1000, 1000]];
-        L.imageOverlay(imgName, bounds).addTo(map);
-        map.fitBounds(bounds);
+    // 2. I TUOI PUNTI CON LE COORDINATE ORIGINALI RDR2
+    const points = [
+        { name: "Punto 1", coords: [-2020.76, -5180.16] }, // Nota: Invertiti in [Y, X]
+        { name: "Punto 2", coords: [-2233.96, 2475.32] },
+        { name: "Punto 3", coords: [2380.70, 2906.16] }
+    ];
 
-        // Esempio punto
-        const points = [{ name: "Punto di Test", coords: [500, 500] }];
-        const listDiv = document.getElementById('point-list');
+    const listDiv = document.getElementById('point-list');
+    points.forEach(p => {
+        const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerText = p.name;
+        item.onclick = () => { map.setView(p.coords, 0); marker.openPopup(); };
+        listDiv.appendChild(item);
+    });
 
-        points.forEach(p => {
-            const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            item.innerText = p.name;
-            item.onclick = () => { map.setView(p.coords, 1); marker.openPopup(); };
-            listDiv.appendChild(item);
-        });
+    // 3. LOG COORDINATE (Ora vedrai i valori nello stile RDR2!)
+    map.on('click', function(e) {
+        // Mostra X (Lng) e Y (Lat) come richiesto
+        console.log("X: " + e.latlng.lng.toFixed(4) + ", Y: " + e.latlng.lat.toFixed(4));
+    });
+}
 
-        map.on('click', function(e) {
-            console.log("Coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
-        });
-    }
-
-    window.onload = initMap;
-</script>
-</body>
-</html>
+window.onload = initMap;
