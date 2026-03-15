@@ -3,17 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>RDR2 Railroad Map</title>
-    <!-- CARICAMENTO LOCALE - Molto più sicuro -->
     <link rel="stylesheet" href="leaflet.css" />
     <script src="leaflet.js"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background: #000; overflow: hidden; }
         body { display: flex; font-family: sans-serif; }
         #sidebar { width: 250px; background: #1a1a1a; color: white; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
-        #map { flex: 1; height: 100%; background: #0b0b0b; }
+        #map { flex: 1; height: 100%; background: #0b0b0b; position: relative; }
         .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
         h3 { text-align: center; color: #ffcc00; margin: 20px 0; }
+
+        /* Stile per l'indicatore di coordinate */
+        #coords-display {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffcc00;
+            padding: 5px 10px;
+            border: 1px solid #ffcc00;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none; /* Non blocca i click sulla mappa */
+        }
     </style>
 </head>
 <body>
@@ -22,35 +37,46 @@
     <h3>PUNTI FERROVIARI</h3>
     <div id="point-list"></div>
 </div>
-<div id="map"></div>
+
+<div id="map">
+    <!-- Box delle coordinate -->
+    <div id="coords-display">Lat: 0.0, Lng: 0.0</div>
+</div>
 
 <script>
     const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
 
     function initMap() {
         if (typeof L === 'undefined') {
-            alert("Errore: Il file leaflet.js non è stato trovato nel tuo GitHub!");
+            alert("Errore: Il file leaflet.js non è stato trovato!");
             return;
         }
 
         const map = L.map('map', {
             crs: L.CRS.Simple,
             minZoom: -3,
-            maxZoom: 5,       // Zoom massimo aumentato
-            zoomSnap: 0.1     // Zoom più fluido
+            maxZoom: 5,
+            zoomSnap: 0.1
         });
 
         const bounds = [[0, 0], [1000, 1000]];
         
-        // Aggiunta opzioni zoom all'immagine
         L.imageOverlay(imgName, bounds, {
-            maxNativeZoom: 2, // Lo zoom reale dell'immagine
-            maxZoom: 5        // Permette di ingrandire oltre i pixel reali
+            maxNativeZoom: 2,
+            maxZoom: 5
         }).addTo(map);
 
         map.fitBounds(bounds);
 
-        // Esempio punto
+        // --- GESTIONE COORDINATE AL MOVIMENTO DEL MOUSE ---
+        const coordsDiv = document.getElementById('coords-display');
+        map.on('mousemove', function(e) {
+            const lat = e.latlng.lat.toFixed(1);
+            const lng = e.latlng.lng.toFixed(1);
+            coordsDiv.innerHTML = `Lat: ${lat}, Lng: ${lng}`;
+        });
+
+        // Esempio punti
         const points = [{ name: "Punto di Test", coords: [500, 500] }];
         const listDiv = document.getElementById('point-list');
 
@@ -60,12 +86,13 @@
             item.className = 'list-item';
             item.innerText = p.name;
             item.onclick = () => { 
-                map.setView(p.coords, 3); // Quando clicchi sulla lista, zooma più vicino (livello 3)
+                map.setView(p.coords, 3);
                 marker.openPopup(); 
             };
             listDiv.appendChild(item);
         });
 
+        // Log in console al click (utile per copiare i valori esatti)
         map.on('click', function(e) {
             console.log("Coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
         });
