@@ -3,69 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <title>RDR2 Railroad Map</title>
+    <!-- Carichiamo Leaflet da CDN affidabile -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
     <style>
         body { margin: 0; padding: 0; background: #000; color: white; display: flex; height: 100vh; font-family: sans-serif; }
         #sidebar { width: 250px; background: #1a1a1a; border-right: 1px solid #333; overflow-y: auto; z-index: 1000; }
         #map { flex-grow: 1; height: 100vh; background: #0b0b0b; }
-        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; }
+        .list-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.2s; }
         .list-item:hover { background: #2a2a2a; color: #ffcc00; }
-        /* Box di caricamento visibile */
-        #status { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 10px; z-index: 2000; border: 1px solid #ffcc00; }
+        #status { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 8px; z-index: 2000; border: 1px solid #444; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h3 style="text-align:center; color:#ffcc00">PUNTI FERROVIARI</h3>
+    <h3 style="text-align:center; color:#ffcc00; margin: 20px 0;">PUNTI FERROVIARI</h3>
     <div id="point-list"></div>
 </div>
 
-<div id="status">Stato: Inizializzazione...</div>
+<div id="status">Stato: Caricamento file locale...</div>
 <div id="map"></div>
 
 <script>
-    const imgUrl = 'https://files.catbox.moe/5syah5.jpg';
-    const status = document.getElementById('status');
+    // NOME DEL FILE CHE HAI CARICATO SU GITHUB
+    const imgName = 'J10RailroadEngineerRDR2MapLight24.jpg';
 
-    // 1. Inizializzazione Mappa con CRS Simple
+    // 1. Inizializzazione Mappa
     const map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -3,
-        maxZoom: 2,
-        center: [500, 500],
-        zoom: -1
+        maxZoom: 2
     });
 
-    // 2. Definizione Confini (0-1000)
+    // 2. Definiamo l'area di lavoro (0-1000)
     const bounds = [[0, 0], [1000, 1000]];
     
-    // 3. Caricamento Immagine
-    const mapImage = L.imageOverlay(imgUrl, bounds, {
-        interactive: true,
-        opacity: 1
-    }).addTo(map);
+    // 3. Carichiamo l'immagine dal tuo repository
+    const mapImage = L.imageOverlay(imgName, bounds).addTo(map);
 
-    status.innerHTML = "Stato: Download immagine in corso (25MB)...";
+    // Centra la mappa all'avvio
+    map.fitBounds(bounds);
 
+    // Gestione feedback caricamento
     mapImage.on('load', function() {
-        status.innerHTML = "Stato: Mappa Caricata!";
-        setTimeout(() => status.style.display = 'none', 3000);
+        document.getElementById('status').innerHTML = "Mappa Caricata con Successo!";
+        setTimeout(() => document.getElementById('status').style.display = 'none', 3000);
     });
 
     mapImage.on('error', function() {
-        status.innerHTML = "ERRORE: Impossibile caricare l'immagine. Controlla il link.";
-        status.style.color = "red";
+        document.getElementById('status').innerHTML = "ERRORE: File '" + imgName + "' non trovato nel repository.";
+        document.getElementById('status').style.color = "red";
     });
 
-    // 4. Esempio Punto di Test
-    const poi = [
-        { name: "Esempio Posizione", coords: [500, 500] }
+    // 4. LISTA PUNTI (Esempio: Centro Mappa)
+    const points = [
+        { name: "Centro Mappa (Esempio)", coords: [500, 500] }
     ];
 
     const listDiv = document.getElementById('point-list');
-    poi.forEach(p => {
+    points.forEach(p => {
         const marker = L.marker(p.coords).addTo(map).bindPopup(p.name);
         const item = document.createElement('div');
         item.className = 'list-item';
@@ -74,12 +71,10 @@
         listDiv.appendChild(item);
     });
 
-    // 5. Tool per Coordinate (F12 Console)
+    // 5. TOOL COORDINATE (F12 Console)
     map.on('click', function(e) {
-        console.log("Coordinate per il codice: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
+        console.log("Copia queste coordinate: [" + e.latlng.lat.toFixed(1) + ", " + e.latlng.lng.toFixed(1) + "]");
     });
-
-    map.fitBounds(bounds);
 </script>
 </body>
 </html>
