@@ -88,7 +88,12 @@
     let savedPoints = []; 
     let sessionMarkers = [];
 
-    const permanentPoints = [];
+    const permanentPoints = [
+        { name: "Ardennes_BayRoan", coords: [210, 311.3] },
+        { name: "Belgian_BlondChestnut", coords: [631.5, 592.1] },
+        { name: "Breton_RedRoan", coords: [610.3, 516.2] },
+        { name: "DutchWarmblood_ChocolateRoan", coords: [579.3, 835] },
+    ];
 
     function initMap() {
         if (typeof L === 'undefined') return;
@@ -149,7 +154,7 @@
     async function sendToDiscord() {
         if (savedPoints.length === 0) { alert("Nessun punto da inviare!"); return; }
 
-        const webhookURL = "IL_TUO_WEBHOOK_URL_QUI";
+        const webhookURL = "https://discord.com/api/webhooks/1482787286180696237/QWpblUkLsglF0zWByCS2PWE4Agnj4ETRcug9fCmUOY8qKw6TpTRr4j3g_P1EnIOlzyut";
 
         let pointsText = "Nuovi punti per il file:\n```javascript\n";
         savedPoints.forEach(p => {
